@@ -1,37 +1,32 @@
-// Import Express.js
-const express = require('express');
-
-// Create an Express app
+const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
+const PORT = process.env.PORT || 10000;
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Set port and verify_token
-const port = process.env.PORT || 3000;
-const verifyToken = process.env.VERIFY_TOKEN;
+const VERIFY_TOKEN = "qortex_verify_token";
 
-// Route for GET requests
-app.get('/', (req, res) => {
-  const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
+// Verification
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
 
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('WEBHOOK VERIFIED');
+  if (mode && token && mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified!");
     res.status(200).send(challenge);
   } else {
-    res.status(403).end();
+    res.sendStatus(403);
   }
 });
 
-// Route for POST requests
-app.post('/', (req, res) => {
-  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  console.log(`\n\nWebhook received ${timestamp}\n`);
-  console.log(JSON.stringify(req.body, null, 2));
-  res.status(200).end();
+// Receive Webhook
+app.post("/webhook", (req, res) => {
+  console.log("Incoming message:", JSON.stringify(req.body, null, 2));
+  res.sendStatus(200);
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`\nListening on port ${port}\n`);
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}`);
 });
